@@ -15,6 +15,7 @@ This is MIT licensed so have fun :).
 ## Getting started
 
 1. Copy `index.php` to a folder on your server
+1. Edit `index.php` and change the four `define( )`s as instructed
 2. Point your browser to http://yourdomain.com/pr/index.php?q=install
 3. Enter a password for your installation
 4. Messages will confirm what you need to do
@@ -57,7 +58,7 @@ the Twitter Bootstrap `<div class="container"></div>` tags.
 ## Feedback
 If you like this script, and hey it might help you get that dream job,
 then I'd love it if you could either let me know you're using it. You
-can contact me at (http://andrewbevitt.com/contact/).
+can contact me at http://andrewbevitt.com/contact/.
 
-You can support my work by donating (http://andrewbevitt.com/donations/).
+You can support my work by donating http://andrewbevitt.com/donations/.
 
