@@ -15,13 +15,31 @@ This is MIT licensed so have fun :).
 ## Getting started
 
 1. Copy `index.php` to a folder on your server
-1. Edit `index.php` and change the four `define( )`s as instructed
+1. Edit `index.php` and change the `define()`s at the top as instructed
 2. Point your browser to http://yourdomain.com/pr/index.php?q=install
 3. Enter a password for your installation
 4. Messages will confirm what you need to do
 5. Once finished go to http://yourdomain.com/pr/edit/
 6. Login and enter some content and change configuration options
 7. Read your resume at http://yourdomain.com/pr/
+
+### Caching
+
+PR uses a single cookie `pr_auth_token` for keeping the session open whilst editing resume content. If your PR install is behind a caching proxy (e.g. Varnish Cache) then you will need to make sure the proxy doesn't drop the `pr_auth_token` cookie otherwise you won't be able to login. If you are using Varnish then here are some VCL rules that will help:
+
+    # Pass request if has PR token cookie
+    if (req.http.Cookie ~ "pr_auth_token") {
+        return (pass);
+    }
+    # Unset cookies unless logging into WP or PR
+    if (!(req.url ~ "wp-(login|admin)|resume\/edit")) {
+        unset req.http.cookie;
+    }
+    # Unset response cookies unless for WP or PR admin
+    if (!(req.url ~ "wp-(login|admin)|resume\/edit")) {
+        unset beresp.http.set-cookie;
+    }
+
 
 ## What does the `.htaccess` file do?
 
