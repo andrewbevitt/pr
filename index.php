@@ -1908,8 +1908,7 @@ if ( $prQ === 'contact' ):
 			$yourName, is_null( $whereFrom ) ? '' : '(at ' . $whereFrom . ')',
 			$yourContact, $msgSubject, $msgContent );
 		$result = mail( $prData->config( 'owner_email' ), '[PR CONTACT]: '.$msgSubject, $msg,
-			'From: webmaster@' . $_SERVER['SERVER_NAME'] . "\r\n" .
-			'Reply-To: do-not-reply@' . $_SERVER['SERVER_NAME'] . "\r\n" .
+			'From: ' . EMAIL_FROM . "\r\n" .
 			'X-Mailer: PR-PHP/' . phpversion() );
 		if ( ! $result ):
 			$contactSuccess = false;
