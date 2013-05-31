@@ -5,6 +5,10 @@ Author: Andrew Bevitt <me@andrewbevitt.com>
 Project page: http://andrewbevitt.com/code/pr/
 Source code: https://github.com/andrewbevitt/pr/
 
+Markdown parsing is derived from the markdown_limited gist:
+  https://gist.github.com/Xeoncross/2244152
+
+
 --- WHAT'S REQUIRED ---
 1. PHP 5 with the JSON PECL Extension
 2. .htaccess or equivalent server configuration
@@ -184,137 +188,136 @@ function get_gravatar( $email, $s = 80, $d = 'mm', $r = 'g', $img = false, $atts
 
 /**
  * Parse the text with *limited* markdown support.
+ * Derived from https://gist.github.com/Xeoncross/2244152
+ * but stripped down for plain simple markup supported in
+ * PR. Markdown syntax remains broadly compatible.
  *
  * @param string $text
  * @return string
  */
 function markdown_limited($text)
 {
+	// PR customisation: preformat the text to make sure new lines
+	// match the anticipated structure in the regular expressions.
+	$text = preg_replace( "/\r\n/", "\n", $text );
+	$text = preg_replace( "/^([^\n]+\n)/", "\n$1", $text );
+	if ( ! preg_match( "/\n$/", $text ) )
+		$text .= "\n";
+
 	// Make it HTML safe for starters
-	$text = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+	$text = htmlspecialchars( $text, ENT_QUOTES, 'UTF-8' );
 
 	// Replace for spaces with a tab (for lists and code blocks)
-	$text = str_replace("    ", "\t", $text);
+	$text = str_replace( "    ", "\t", $text );
 
 	// Blockquotes (they have email-styled > at the start)
 	$regex = '^&gt;.*?$(^(?:&gt;).*?\n|\n)*';
-	preg_match_all("~$regex~m", $text, $matches, PREG_SET_ORDER);
-
-	foreach($matches as $set)
-	{
-		$block = "<blockquote>\n". trim(preg_replace('~(^|\n)[&gt; ]+~', "\n", $set[0])) . "\n</blockquote>\n";
-		$text = str_replace($set[0], $block, $text);
+	preg_match_all( "~$regex~m", $text, $matches, PREG_SET_ORDER );
+	foreach( $matches as $set ) {
+		$block = "<blockquote>". trim( preg_replace( '~(^|\n)[&gt; ]+~', " ", $set[0] ) ) . "</blockquote>\n";
+		$text = str_replace( $set[0], $block, $text );
 	}
 
 	// Titles
-	$text = preg_replace_callback("~(^|\n)(#{1,6}) ([^\n#]+)[^\n]*~", function($match)
-	{
-		$n = strlen($match[2]);
-		return "\n<h$n>". $match[3]. "</h$n>";
-	}, $text);
+	$text = preg_replace_callback( "~(^|\n)(#{1,6}) ([^\n#]+)[^\n]*~", function( $match ) {
+			$n = strlen( $match[2] );
+			return "\n<h$n>". $match[3]. "</h$n>";
+		}, $text );
 
 	// Lists must start with a tab (four spaces are converted to tabs ^above^)
 	$regex = '(?:^|\n)(?:\t+[\-\+\*0-9.][^\n]+\n+)+';
-
-	preg_match_all("~$regex~", $text, $matches, PREG_SET_ORDER);
+	preg_match_all( "~$regex~", $text, $matches, PREG_SET_ORDER );
 
 	// Recursive closure
-	$list = function($block, $top_level = false) use (&$list)
-	{
-		if(is_array($block)) $block = $block[0];
+	$list = function( $block, $top_level=false ) use ( &$list ) {
+		// Extract the whole matched text from the match array
+		if ( is_array( $block ) ) $block = $block[0];
 
 		// Chop one level of all the lines
-		$block = preg_replace("~(^|\n)\t~", "\n", $block);
+		$block = preg_replace( "~(^|\n)\t~", "\n", $block );
 
 		// Is this an ordered or un-ordered list?
-		$tag = ctype_digit(substr(ltrim($block), 0, 1)) ? 'ol' : 'ul';
+		$tag = ctype_digit( substr( ltrim( $block ), 0, 1 ) ) ? 'ol' : 'ul';
 
 		// Only replace elements of THIS LEVEL with li
-		$block = preg_replace('~(?:^|\n)[^\s]+ ([^\n]+)~', "\n<li>$1</li>", $block);
+		$block = preg_replace( '~(?:^|\n)[^\s]+ ([^\n]+)~', "\n<li>$1</li>", $block );
 
-		if($top_level) $block .= "\n";
-
+		// Put all of the elements at this level into the block
+		if ( $top_level ) $block .= "\n";
 		$block = "<$tag>$block</$tag>";
 
 		// Replace nested list items now
-		$block = preg_replace_callback('~(\t[^\n]+\n?)+~', $list, $block);
+		// NOTE: This means we get code like this:
+		// <ul>
+		//   <li>Item</li>
+		//   <ol>
+		//     <li>Sub-item</li>
+		//   </ol>
+		// </ul>
+		$block = preg_replace_callback( '~(\t[^\n]+\n?)+~', $list, $block );
 
 		// return the finished list
 		return $top_level ? "\n$block\n\n" : $block;
 	};
 
-	foreach($matches as $set)
-	{
-		$text = str_replace($set[0], $list(trim($set[0], "\n "), true), $text);
+	// Loop over all list blocks
+	foreach( $matches as $set ) {
+		$text = str_replace( $set[0], $list( trim( $set[0], "\n " ), true ), $text );
 	}
 
-	// Paragraphs
-	$text = preg_replace('~\n([^><\t]+)\n~', "\n\n<p>$1</p>\n\n", $text);
-
-	// Paragraphs (what about fixing the above?)
-	$text = str_replace(array("<p>\n", "\n</p>"), array('<p>', '</p>'), $text);
-
 	// Lines that end in two spaces require a BR
-	$text = str_replace("  \n", "<br>\n", $text);
+	// PR customisation: moved before <p> so takes precedence and
+	// to remove the \n after <br> tags so can be inside <p> tags
+	$text = str_replace( "  \n", "<br>", $text );
+
+	// Paragraphs
+	// PR customisation (added ?) so regex is not greedy on \n's
+	// and obviously to include the <br>'s that are added above
+	$text = preg_replace( '~\n(([^><\t]|<br>)+?)\n~', "\n\n<p>$1</p>\n\n", $text );
+	$text = str_replace( array( "<p>\n", "\n</p>" ), array( '<p>', '</p>' ), $text );
 
 	// Bold, Italic, Code
 	$regex = '([*_`])((?:(?!\1).)+)\1';
-	preg_match_all("~$regex~", $text, $matches, PREG_SET_ORDER);
-
-	foreach($matches as $set)
-	{
-		if($set[1] == '`') $tag = 'code';
-		elseif($set[1] == '*') $tag = 'b';
+	preg_match_all( "~$regex~", $text, $matches, PREG_SET_ORDER );
+	foreach( $matches as $set ) {
+		if ( $set[1] == '`' ) $tag = 'code';
+		elseif ( $set[1] == '*' ) $tag = 'b';
 		else $tag = 'em';
-
-		$text = str_replace($set[0], "<$tag>{$set[2]}</$tag>", $text);
+		$text = str_replace( $set[0], "<$tag>{$set[2]}</$tag>", $text );
 	}
 
 	// Links and Images
 	$regex = '(!)*\[([^\]]+)\]\(([^\)]+?)(?: &quot;([\w\s]+)&quot;)*\)';
-	preg_match_all("~$regex~", $text, $matches, PREG_SET_ORDER);
-
-	foreach($matches as $set)
-	{
-		$title = isset($set[4]) ? " title=\"{$set[4]}\"" : '';
-		if($set[1])
-		{
-			$text = str_replace($set[0], "<img src=\"{$set[3]}\"$title alt=\"{$set[2]}\"/>", $text);
-		}
-		else
-		{
-			$text = str_replace($set[0], "<a href=\"{$set[3]}\"$title>{$set[2]}</a>", $text);
+	preg_match_all( "~$regex~", $text, $matches, PREG_SET_ORDER );
+	foreach($matches as $set) {
+		$title = isset( $set[4] ) ? " title=\"{$set[4]}\"" : '';
+		if ( $set[1] ) {
+			$text = str_replace( $set[0], "<img src=\"{$set[3]}\"$title alt=\"{$set[2]}\"/>", $text );
+		} else {
+			$text = str_replace( $set[0], "<a href=\"{$set[3]}\"$title>{$set[2]}</a>", $text );
 		}
 	}
 
-	// Preformated (often code) blocks
+	// Preformated blocks
+	// PR customisation to remove the <span class="string|comment"> tags
 	$regex = '(?:(?:(    |\t)[^\n]*\n)|\n)+';
-	preg_match_all("~$regex~", $text, $matches, PREG_SET_ORDER);
-
-	foreach($matches as $set)
-	{
-		if( ! trim($set[0])) continue;
+	preg_match_all( "~$regex~", $text, $matches, PREG_SET_ORDER );
+	foreach( $matches as $set ) {
+		// If it's a blank line then ignore it
+		if ( ! trim( $set[0] ) ) continue;
 
 		// If any tags were added (i.e. <p></p>), remove them!
-		$lines = strip_tags($set[0]);
+		$lines = strip_tags( $set[0] );
 
 		// Remove the starting tab from each line
-		$lines = trim(str_replace("\n\t", "\n", $lines), "\n");
-
-		// Mark strings
-		$regex = '((&#039;)|(&quot;))(?:[^\\\\1]|\\\.)*?\1';
-		$lines = preg_replace("~$regex~", '<span class="string">$0</span>', $lines);
-
-		// Mark comments
-		$regex = '(/\*.*?\*/)|((#(?!\w+;)|(-- )|(//))[^\n]+)';
-		$lines = preg_replace("~$regex~s", '<span class="comment">$0</span>', $lines);
-
-		$text = str_replace($set[0], "\n<pre>". $lines. "</pre>\n", $text);
+		$lines = trim( str_replace( "\n\t", "\n", $lines ), "\n" );
+		$text = str_replace( $set[0], "\n<pre>". $lines. "</pre>\n", $text );
 	}
 
 	// Reduce crazy newlines
 	return preg_replace("~\n\n\n+~", "\n\n", $text);
 }
+
 // Sanitize output
 function pr_sanitize( $str ) {
 	// Trim whitespace
@@ -402,7 +405,7 @@ function edit_section_row( $code, $sort='', $type=SECTION_BLOCK_70_30, $heading=
 	<div class="control-group">
 		<label for="sections[<?php echo $code; ?>][content]" class="control-label">Content</label>
 		<div class="controls">
-			<textarea id="sections[<?php echo $code; ?>][content]" name="sections[<?php echo $code; ?>][content]" class="span6"><?php echo $content; ?></textarea>
+			<textarea id="sections[<?php echo $code; ?>][content]" name="sections[<?php echo $code; ?>][content]" class="span6" rows="10"><?php echo $content; ?></textarea>
 			<span class="help-block">If using a layout with multiple columns put <code>&lt;!--COLBREAK--&gt;</code> between blocks.<br/>Section content can be written in Markdown.</span>
 		</div>
 	</div>
