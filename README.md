@@ -40,6 +40,9 @@ PR uses a single cookie `pr_auth_token` for keeping the session open whilst edit
         unset beresp.http.set-cookie;
     }
 
+## Markdown syntax
+
+PR uses a modified version of [Markdown limited](https://gist.github.com/Xeoncross/2244152) which has a few limitations when compared to a complete Markdown parser. The main point that I usually get stuck on is lists: *both* lists and code blocks must be indented with 4 spaces or a tab. Each additional level of the nested list must have another 4 spaces or a tab. See the [Markdown limited](https://gist.github.com/Xeoncross/2244152) gist for a full example of supported syntax.
 
 ## What does the `.htaccess` file do?
 
