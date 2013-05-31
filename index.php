@@ -327,6 +327,8 @@ function pr_sanitize( $str ) {
 
 // Convert Markdown to HTML markup
 function pr_markup( $str ) {
+	// The markdown_limited function assumes new lines are just \n
+	$str = preg_replace( "/\r\n/", "\n", $str );
 	return markdown_limited( $str );
 }
 
