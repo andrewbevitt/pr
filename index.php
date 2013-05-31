@@ -433,7 +433,7 @@ class PRTheme_Default {
 		.no-list-item { list-style-type:none;margin:0;padding:0; }
 		.pr-contact-list { margin-left:5px;margin-top:5px;font-size: 85%; }
 		.pr-contact-list strong { text-transform:uppercase; }
-		div.pr-qr-code { margin-top: 20px; }
+		div.pr-qr-code, div.pr-contact-block { border-top: 2px solid #cccccc; margin-top:20px; padding-top:20px; padding-bottom: 10px; }
 		.pr-printable, .pr-downloadable { text-transform:uppercase; }
 
 		/* Large desktop */
@@ -461,8 +461,11 @@ class PRTheme_Default {
 		.pr-printed #topline { white-space: nowrap; }
 		.pr-printed .pr-print-only { display: block; }
 		.pr-printed .pr-not-on-print { display: none; }
-		.pr-printed .pr-print-avoid-break { page-break-inside: avoid; }
+		.pr-printed .pr-print-avoid-break, .pr-printed p, .pr-printed ol, .pr-printed ul, .pr-printed li, .pr-printed blockquote, .pr-printed pre, .pr-printed [class*="span"] { page-break-inside: avoid; }
 		.pr-printed .pr-contact-list a[href]:after{content:"";}
+		.pr-printed h1, .pr-printed h2, .pr-printed h3, .pr-printed h4, .pr-printed h5, .pr-printed h6 {
+			page-break-after:avoid;
+		}
 <?php
 		if ( $return ) return ob_get_clean();
 		ob_end_flush();
@@ -477,8 +480,9 @@ class PRTheme_Default {
 		@media (max-width: 480px) { .prRow .pr50 { float: left; width: 50%; } }
 		.pr-print-only { display: block; }
 		.pr-not-on-print { display: none; }
-		.pr-print-avoid-break { page-break-inside: avoid; }
+		.pr-print-avoid-break, p, ol, ul, li, blockquote, pre, [class*="span"] { page-break-inside: avoid; }
 		.pr-contact-list a[href]:after{content:"";}
+		h1, h2, h3, h4, h5, h6 { page-break-after:avoid; }
 <?php
 		if ( $return ) return ob_get_clean();
 		ob_end_flush();
@@ -489,7 +493,7 @@ class PRTheme_Default {
 		ob_start(); // buffer output so we can flush or return on end
 		$printMode = $GLOBALS['prQ'] === 'print';
 ?>
-	<div class="row">
+	<div class="row pr-print-avoid-break">
 		<div class="span2" id="gravatar">
 			<img class="img-circle" src="<?php echo get_gravatar($prData->config('owner_email'), 104); ?>" alt="Photo of <?php echo $prData->config('owner_name'); ?>"/>
 		</div>
@@ -601,7 +605,7 @@ class PRTheme_Default {
 		// Now we need to loop over all the sections rendering as needed
 		foreach( $prData->resume( 'sections' ) as $section ) {
 			// Layout is style dependent so act based on that
-			printf( '<div class="row pr-print-avoid-break">' );
+			printf( '<div class="row">' );
 			switch( $section['style'] ) {
 				case SECTION_BLOCK_100:
 					if ( ! empty( $section['heading'] ) )
@@ -644,52 +648,22 @@ class PRTheme_Default {
 		// NOTE: Not shown on printouts so dont render
 		if ( $prData->config( 'contact_form' ) && !$printMode ):
 ?>
-	<div class="row pr-not-on-print">
-		<div class="span10 offset2">
+	<div class="row pr-not-on-print pr-contact-block">
+		<div class="span12 ofset2">
 			<h3><?php echo $prData->config( 'contact_form_heading' ); ?></h3>
 		</div>
-<!--		<div class="span4 offset2 hidden-phone">
-<?php
-			// Social media icons and contact methods
-			if ( $prData->anySocial() ):
-				printf('<div class="btn-group pr-social-icons pr-not-on-print">');
-				foreach( explode(',', 'facebook,github,google_plus,linkedin,pinterest,twitter') as $social ) {
-					$social_link = $prData->config( $social . '_profile' );
-					if ( ! empty( $social_link ) )
-						printf('<a class="btn" href="%s"><i class="icon-%s"></i></a>',
-							$social_link, str_replace( '_', '-', $social ));
-				}
-				printf('</div>');
-			endif;
-			// and the list of contact details
-			if ( $prData->anyContact() ):
-				printf('<ul class="pr-contact-list no-list-item">');
-				$email = $prData->config( 'public_email_address' );
-				if ( ! empty( $email ) )
-					printf( '<li><a href="mailto:%1$s">%1$s</a></li>', $email );
-				$website = $prData->config( 'website' );
-				if ( ! empty( $website ) )
-					printf( '<li><a href="%1$s">%1$s</a></li>', $website );
-				foreach( array( 'phone_number', 'location' ) as $key ) {
-					$dopt = $prData->config( $key );
-					if ( ! empty( $dopt ) )
-						printf( '<li>%s</li>', $dopt );
-				}
-				printf('</ul>');
-			endif;
-?>
-		</div>-->
 	<form method="post" action="<?php echo CONTACT_URL; ?>" class="pr-contact-form">
-		<div class="span3 offset2">
+		<div class="span2 ofset2">
 			<ul class="no-list-item">
-				<li><input type="text" placeholder="Your name" name="prconf_name" class="span3" value="<?php echo empty($_POST['prconf_name'])?'':htmlspecialchars($_POST['prconf_name']); ?>" required/></li>
-				<li><input type="text" placeholder="Your contact details" name="prconf_contact" class="span3" value="<?php echo empty($_POST['prconf_contact'])?'':htmlspecialchars($_POST['prconf_contact']); ?>" required/></li>
-				<li><input type="text" placeholder="Message subject" name="prconf_subject" class="span3" value="<?php echo empty($_POST['prconf_subject'])?'':htmlspecialchars($_POST['prconf_subject']); ?>" required></li>
-				<li><input type="text" placeholder="Where are you from?" name="prconf_where" class="span3" value="<?php echo empty($_POST['prconf_where'])?'':htmlspecialchars($_POST['prconf_where']); ?>"/></li>
+				<li><input type="text" placeholder="Your name" name="prconf_name" class="span2" value="<?php echo empty($_POST['prconf_name'])?'':htmlspecialchars($_POST['prconf_name']); ?>" required/></li>
+				<li><input type="text" placeholder="Contact details" name="prconf_contact" class="span2" value="<?php echo empty($_POST['prconf_contact'])?'':htmlspecialchars($_POST['prconf_contact']); ?>" required/></li>
+<!--				<li><input type="text" placeholder="Message subject" name="prconf_subject" class="span3" value="<?php echo empty($_POST['prconf_subject'])?'':htmlspecialchars($_POST['prconf_subject']); ?>" required></li>-->
+				<li><input type="text" placeholder="Company name" name="prconf_where" class="span2" value="<?php echo empty($_POST['prconf_where'])?'':htmlspecialchars($_POST['prconf_where']); ?>"/></li>
 			</ul>
 		</div>
-		<div class="span4">
-			<textarea id="prconf_message" name="prconf_message" placeholder="Enter your message here" class="span4" rows="4" required><?php echo empty($_POST['prconf_message'])?'':htmlspecialchars($_POST['prconf_message']); ?></textarea>
+		<div class="span7">
+			<input type="text" placeholder="Message subject" name="prconf_subject" class="span7" value="<?php echo empty($_POST['prconf_subject'])?'':htmlspecialchars($_POST['prconf_subject']); ?>" required>
+			<textarea id="prconf_message" name="prconf_message" placeholder="Enter your message here" class="span7" rows="4" required><?php echo empty($_POST['prconf_message'])?'':htmlspecialchars($_POST['prconf_message']); ?></textarea>
 			<button type="submit" class="btn btn-primary btn-block">Send</button>
 		</div>
 		<div class="span3 hidden-phone">
@@ -738,7 +712,7 @@ class PRTheme_Default {
 			print( pr_markup( pr_option_replace( $prData->config( 'print_text' ), $prData ) ) );
 ?>
 		</div>
-		<div class="pr50 text-center <?php echo $printMode ? 'span4' : 'span3'; ?>">
+		<div class="pr50 text-right <?php echo $printMode ? 'span4' : 'span3'; ?>">
 <?php
 			printf( '<img src="https://chart.googleapis.com/chart?chs=104x104&cht=qr&chld=Q|0&chl=%s" alt="QR Code"/>',
 				urlencode( $prData->config( 'qrcode_url' ) ) );
