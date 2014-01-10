@@ -437,9 +437,13 @@ class PRTheme_Default {
 		.pr-printable, .pr-downloadable { text-transform:uppercase; }
 
 		/* Large desktop */
-		@media (min-width: 1200px) { }
+		@media (min-width: 1200px) {
+			.row .span3 h5 { margin-top:0; }
+		}
 		/* Portrait tablet to landscape and desktop */
-		@media (min-width: 768px) and (max-width: 979px) { }
+		@media (min-width: 768px) and (max-width: 1199px) {
+			.row .span3 h5 { margin-top:0; }
+		}
 		/* Landscape phone to portrait tablet */
 		@media (max-width: 767px) {
 			#gravatar { width: 50%; float: right; text-align:right; }
