@@ -11,12 +11,13 @@ Markdown parsing is derived from the markdown_limited gist:
 
 --- WHAT'S REQUIRED ---
 1. PHP 5 with the JSON PECL Extension
-2. .htaccess or equivalent server configuration
+2. Some form of server rewrite rule
 3. Some knowledge Markdown
 
 
 --- GETTING STARTED ---
 1. Change the following values for your needs:
+   WKHTML: http://stackoverflow.com/questions/9604625/wkhtmltopdf-cannot-connect-to-x-server
 */
 define( 'EMAIL_FROM', 'youremail@domain.com' );
 define( 'DATA_STORE', 'filename-for-data-store.prdb' );
@@ -32,6 +33,7 @@ define( 'WKHTML_EXEC', '/usr/local/bin/wkhtmltopdf' ); # using WKHTMLTOPDF
 
 3. "Install" the script
    Point your browser at: http://domain.com/path/to/index.php?q=install
+
    This creates the following .htaccess file; if you do not want to
    use the .htaccess file, or this script is in a folder with other
    files then you will need to configure your server manually.
@@ -40,6 +42,17 @@ define( 'WKHTML_EXEC', '/usr/local/bin/wkhtmltopdf' ); # using WKHTMLTOPDF
    RewriteCond %{REQUEST_FILENAME} !index.php
    RewriteRule .* index.php?q=$0 [L]
    </IfModule>
+
+   For NGINX use something like this:
+   location ~ /path/to(/(.*))? {
+        set $args q=$2;
+        try_files /path/to/index.php =404;
+        include fastcgi_params;
+        fastcgi_pass php;
+        fastcgi_param QUERY_STRING $args;
+        # if outside the server {} document root
+        # root /some/other/doc/root/path;
+   }
 
 4. Edit your resume
    Point your browser at: http://domain.com/path/to/edit/ [OR]

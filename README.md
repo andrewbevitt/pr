@@ -56,6 +56,22 @@ The `.htaccess` file is used by the Apache webserver to redirect all requests ma
 	</IfModule>
 	# END_PR
 
+## Is NGINX supported? (Answer: yes)
+
+For NGINX use something like this in your server {} directive
+
+    location ~ /path/to(/(.*))? {
+        set $args q=$2;
+        try_files /path/to/index.php =404;
+        include fastcgi_params;
+        fastcgi_pass php;
+        fastcgi_param QUERY_STRING $args;
+        # if outside the server {} document root
+        # root /some/other/doc/root/path;
+    }
+
+Where `/path/to` is the directory you put `index.php` in under the document root.
+
 ## Customisation
 
 You can customise the PR reading layout by writing your own theme class.
